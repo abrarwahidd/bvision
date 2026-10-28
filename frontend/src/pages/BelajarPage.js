@@ -120,7 +120,7 @@ function BelajarPage() {
   }, []); // Tambahkan dependency array kosongggg
 
   const sendFrame = () => {
-    // jang mastikeun semua referensi valid sebelum mengirim frame
+    // buat mastikan semua referensi valid sebelum mengirim frame
     if (
       !socketRef.current ||
       socketRef.current.readyState !== WebSocket.OPEN ||
@@ -138,7 +138,7 @@ function BelajarPage() {
     context.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
     canvas.toBlob(
       (blob) => {
-        // Periksa deui koneksi sebelum mengirim
+        // Periksa lagi koneksi sebelum mengirim
         if (
           blob &&
           socketRef.current &&
