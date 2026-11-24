@@ -51,10 +51,17 @@ function BelajarPage() {
       if (latestState.current.activePane === "exam") {
         generateNewQuestion();
       }
-      socketRef.current = new WebSocket(
-        // process.env.REACT_APP_WS_URL || "ws://localhost:8000/ws"
-        process.env.REACT_APP_WS_URL || "wss://bvision-production.up.railway.app/ws"
-      );
+
+      const WS_URL = process.env.REACT_APP_WS_URL;
+
+      if (!WS_URL) {
+        throw new Error("REACT_APP_WS_URL belum dikonfigurasi.");
+      }
+      socketRef.current = new WebSocket(WS_URL);
+      // socketRef.current = new WebSocket(
+      //   // process.env.REACT_APP_WS_URL || "ws://localhost:8000/ws"
+      //   // process.env.REACT_APP_WS_URL || "wss://bvision-production.up.railway.app/ws"
+      // );
       socketRef.current.onopen = () => {
         console.log("WebSocket terhubung.");
         if (!intervalRef.current) {
