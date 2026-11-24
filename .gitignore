@@ -1,16 +1,37 @@
-# Folder Virtual Environment di dalam backend
-backend/myenv/
-
-# Folder dependencies frontend
-frontend/node_modules/
-
-# Python cache
+# Python
 __pycache__/
-*.pyc
+*.py[cod]
+*.pyo
+*.egg-info/
+.venv/
+venv/
+env/
+.python-version
 
-# IDE / Editor specific files
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Frontend dependencies and build output
+node_modules/
+frontend/build/
+frontend/.npm/
+
+# IDE / editor
 .vscode/
 .idea/
+*.swp
+*.swo
 
-# Environment variables file
-.env
+# OS files
+.DS_Store
+Thumbs.db
+
+# Generated ML artifacts
+/data/processed/
+/mlruns/
+/mlartifacts/
+/mlflow.db
+/metrics/
+data/raw/
