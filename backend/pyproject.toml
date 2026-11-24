@@ -11,6 +11,6 @@ dependencies = [
     "numpy<2",
     "opencv-python-headless==4.10.0.84",
     "python-multipart>=0.0.32",
-    "scikit-learn==1.7.2",
+    "scikit-learn==1.9.1",
     "uvicorn[standard]>=0.52.0",
 ]
