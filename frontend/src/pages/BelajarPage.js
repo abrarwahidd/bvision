@@ -52,7 +52,8 @@ function BelajarPage() {
         generateNewQuestion();
       }
       socketRef.current = new WebSocket(
-        process.env.REACT_APP_WS_URL || "ws://localhost:8000/ws"
+        // process.env.REACT_APP_WS_URL || "ws://localhost:8000/ws"
+        process.env.REACT_APP_WS_URL || "wss://bvision-production.up.railway.app/ws"
       );
       socketRef.current.onopen = () => {
         console.log("WebSocket terhubung.");
