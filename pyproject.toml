@@ -1,0 +1,25 @@
+[project]
+name = "bvision"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "abrarwahid", email = "abrarrrw7@gmail.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "dvc>=3.67.1",
+    "evidently>=0.7.23",
+    "mediapipe==0.10.21",
+    "mlflow>=3.18.0",
+    "opencv-python>=4.11,<5",
+    "scikit-learn>=1.9.1",
+    "seaborn>=0.13.2",
+]
+
+[project.scripts]
+bvision = "bvision:main"
+
+[build-system]
+requires = ["uv_build>=0.12.5,<0.13.0"]
+build-backend = "uv_build"
