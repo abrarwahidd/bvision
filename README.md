@@ -1,259 +1,192 @@
 # Bvision — Platform Belajar Abjad BISINDO Interaktif
 
-Bvision adalah aplikasi web edukasi berbasis kecerdasan buatan yang memungkinkan pengguna mempelajari **Abjad Bahasa Isyarat Indonesia (BISINDO)** secara interaktif dan real-time menggunakan kamera perangkat mereka.
+Bvision adalah aplikasi web untuk mempelajari abjad Bahasa Isyarat Indonesia (BISINDO). Frontend React mengambil frame dari kamera pengguna dan mengirimkannya ke backend FastAPI melalui WebSocket untuk diprediksi menjadi huruf.
 
----
+![Hero Bvision](frontend/public/asetreadme/image.png)
 
-![Hero Ikon](frontend/public/asetreadme/image.png)
+## Fitur
 
-## Daftar Isi
+- **Deteksi bebas:** prediksi huruf BISINDO dari kamera secara real-time.
+- **Mode ujian:** tantangan huruf acak dengan umpan balik.
+- **Kamus:** referensi visual abjad, angka, dan kosakata.
+- **Artikel:** informasi tentang bahasa isyarat dan budaya Tuli.
+- **Responsif:** tampilan desktop dan perangkat mobile.
 
-- [Deskripsi Proyek](#deskripsi-proyek)
-- [Fitur Utama](#fitur-utama)
-- [Teknologi yang Digunakan](#teknologi-yang-digunakan)
-- [Arsitektur Sistem](#arsitektur-sistem)
-- [Struktur Proyek](#struktur-proyek)
-- [Prasyarat](#prasyarat)
-- [Cara Menjalankan](#cara-menjalankan)
-- [Variabel Lingkungan](#variabel-lingkungan)
-- [Deployment](#deployment)
+## Teknologi
 
----
-
-## Deskripsi Proyek
-
-Bvision lahir dari keyakinan bahwa teknologi dapat menjadi jembatan untuk komunikasi yang lebih inklusif. Dengan memanfaatkan computer vision dan machine learning, aplikasi ini mendeteksi gerakan tangan pengguna melalui webcam secara langsung dan menerjemahkannya menjadi huruf abjad BISINDO — tanpa perlu perangkat tambahan apa pun.
-
----
-
-## Fitur Utama
-
-| Fitur | Deskripsi |
+| Bagian | Teknologi |
 |---|---|
-| **Deteksi Bebas** | Arahkan tangan ke kamera; sistem mengenali dan menampilkan huruf yang diperagakan secara real-time |
-| **Mode Ujian** | Sistem memberi tantangan huruf secara acak; pengguna harus memeragakannya dan mendapat umpan balik langsung |
-| **Kamus BISINDO** | Referensi visual lengkap untuk abjad, angka, dan kosakata sehari-hari dilengkapi gambar dan video |
-| **Artikel** | Kumpulan wawasan dan cerita seputar bahasa isyarat Indonesia dan budaya Tuli |
-| **Responsif** | Tampilan menyesuaikan antara desktop dan perangkat mobile |
+| Frontend | React 19, React Router, WebSocket API browser |
+| Backend | Python 3.12, FastAPI, Uvicorn |
+| Computer vision | MediaPipe 0.10.21, OpenCV headless |
+| Klasifikasi | scikit-learn 1.9.1, joblib |
+| Deployment | Vercel (frontend), Railway (backend) |
+| Training/eksperimen | scikit-learn, MLflow; skrip di `training/` |
 
----
+## Arsitektur inferensi
 
-## Teknologi yang Digunakan
-
-### Backend
-| Teknologi | Versi | Kegunaan |
-|---|---|---|
-| Python | 3.12 | Bahasa pemrograman utama |
-| FastAPI | ≥ 0.141 | Framework web & WebSocket server |
-| MediaPipe | 0.10.21 | Deteksi dan pelacakan landmark tangan |
-| Scikit-learn | 1.7.2 | Model klasifikasi abjad |
-| OpenCV (headless) | 4.10.0 | Pemrosesan gambar dari frame kamera |
-| Uvicorn | ≥ 0.52 | ASGI server |
-| joblib | ≥ 1.5 | Memuat model `.pkl` yang telah dilatih |
-
-### Frontend
-| Teknologi | Versi | Kegunaan |
-|---|---|---|
-| React | 19 | Library antarmuka pengguna |
-| React Router DOM | 7 | Navigasi halaman (SPA) |
-| WebSocket API | (native browser) | Komunikasi real-time ke backend |
-
----
-
-## Arsitektur Sistem
-
-```
-┌──────────────────────────────────────────────┐
-│                  Browser                      │
-│                                               │
-│  Webcam → Canvas → JPEG blob                  │
-│       │                                       │
-│       └──── WebSocket (ws://.../ws) ──────────┤
-└──────────────────────────────────────────────┘
-                        │
-                        ▼
-┌──────────────────────────────────────────────┐
-│              FastAPI Backend                  │
-│                                               │
-│  receive_bytes()                              │
-│       ↓                                       │
-│  OpenCV decode → RGB frame                    │
-│       ↓                                       │
-│  MediaPipe Hands → 21 landmark × 2 tangan     │
-│       ↓                                       │
-│  84 fitur (x, y) + padding                   │
-│       ↓                                       │
-│  StandardScaler → model.predict()             │
-│       ↓                                       │
-│  send_text(huruf)                             │
-└──────────────────────────────────────────────┘
+```text
+Kamera browser
+  → Canvas/JPEG setiap 400 ms
+  → WebSocket /ws
+  → FastAPI menerima bytes
+  → OpenCV decode dan konversi RGB
+  → MediaPipe Hands mendeteksi landmark
+  → 84 fitur x/y dinormalisasi dengan StandardScaler
+  → model Random Forest memprediksi huruf
+  → backend mengirim teks prediksi ke browser
 ```
 
-Frame kamera dikirim setiap **400 ms** via WebSocket sebagai JPEG blob (kualitas 50%). Backend membalas dengan satu karakter huruf hasil prediksi (atau `"Tidak Terdeteksi"` jika tangan tidak ditemukan).
+Model aktif dan scaler harus selalu dipasangkan:
 
----
+- `backend/models/model_new.pkl`
+- `backend/models/scaler_new.pkl`
 
-## Struktur Proyek
+Model pickle/joblib hanya boleh dimuat dari sumber tepercaya. Versi scikit-learn runtime harus cocok dengan versi saat artefak dibuat; backend mengunci `scikit-learn==1.9.1`.
 
-```
-bvision/
+## Struktur repository
+
+```text
+.
+├── .github/workflows/ci_cd.yml # CI: test/build frontend, cek backend, build image
 ├── backend/
-│   ├── main.py               # Entry point — FastAPI + WebSocket endpoint
-│   ├── main2.py              # Versi eksperimen (model alternatif)
-│   ├── models/
-│   │   ├── model_new.pkl   # Model klasifikasi abjad (aktif)
-│   │   └── scaler_new.pkl  # StandardScaler untuk model aktif
-│   ├── Dockerfile
-│   ├── nixpacks.toml         # Konfigurasi deployment Railway
-│   └── pyproject.toml
-│
-└── frontend/
-    └── src/
-        ├── pages/
-        │   ├── BerandaPage.js        # Halaman utama
-        │   ├── BelajarPage.js        # Ruang belajar (kamera + mode)
-        │   ├── KamusPage.js          # Kamus visual BISINDO
-        │   ├── ArtikelPage.js        # Daftar artikel
-        │   ├── ArticleDetailPage.js  # Detail artikel
-        │   ├── TentangKamiPage.js    # Halaman tentang
-        │   ├── TentangBisindoPage.js # Penjelasan BISINDO
-        │   └── HubungiKamiPage.js    # Kontak
-        ├── components/
-        │   ├── VIdeoDisplay.js   # Komponen tampilan webcam
-        │   ├── Controls.js       # Tombol mulai/hentikan kamera
-        │   ├── Tabs.js           # Tab mode belajar
-        │   ├── FreeDetectPane.js # Panel hasil deteksi bebas
-        │   ├── ExamPane.js       # Panel mode ujian
-        │   ├── DictionaryPane.js # Panel kamus di halaman belajar
-        │   ├── InstructionModal.js
-        │   ├── Navbar.js
-        │   └── Footer.js
-        ├── hooks/
-        │   └── useWindowSize.js  # Hook deteksi lebar layar (mobile/desktop)
-        └── data/
-            ├── articles.js       # Data konten artikel
-            └── dictionaryData.js # Data kamus (abjad, angka, kosakata)
+│   ├── main.py                 # FastAPI dan WebSocket /ws
+│   ├── models/                 # Model dan scaler
+│   ├── Dockerfile              # Image backend Railway/Docker
+│   ├── nixpacks.toml            # Konfigurasi alternatif Railway Nixpacks
+│   ├── pyproject.toml
+│   └── uv.lock
+├── data/
+│   ├── raw/                    # Dataset training lokal, tidak dilacak Git
+│   └── processed/              # Landmark CSV hasil ekstraksi, diabaikan Git
+├── frontend/
+│   ├── public/                 # Gambar, ikon, video kamus
+│   └── src/                    # Halaman dan komponen React
+├── metrics/                    # Output evaluasi lokal, diabaikan Git
+├── mlartifacts/                # Artefak MLflow lokal, diabaikan Git
+├── training/
+│   ├── extract_landmarks.py    # Ekstraksi landmark dari data/raw/<label>/
+│   ├── train.py                # Training, evaluasi, logging MLflow
+│   └── params.yaml             # Parameter training dan MLflow
+├── requirements-training.txt   # Dependency training
+└── pyproject.toml              # Dependency tool training/MLflow
 ```
 
----
+Dataset mentah di `data/raw/` tidak dilacak Git.
 
 ## Prasyarat
 
-Pastikan perangkat Anda telah menginstal:
+- Python 3.12+
+- `uv` untuk backend dan environment training
+- Node.js 18+ dan npm
+- Webcam dan browser modern
+- `libgl1` dan `libglib2.0-0` pada Linux jika diperlukan oleh OpenCV/MediaPipe
 
-- **Python** 3.12+
-- **uv** (package manager Python) — atau `pip` biasa
-- **Node.js** 18+ dan **npm**
-- Webcam (kamera depan/belakang)
-- Browser modern (Chrome, Firefox, Edge)
+## Menjalankan lokal
 
----
-
-## Cara Menjalankan
-
-### 1. Clone Repositori
-
-```bash
-git clone <url-repositori>
-cd bvision
-```
-
----
-
-### 2. Jalankan Backend
+### Backend
 
 ```bash
 cd backend
-```
-
-**Menggunakan `uv` (direkomendasikan):**
-
-```bash
-uv sync
+uv sync --frozen
 uv run uvicorn main:app --host 0.0.0.0 --port 8000
 ```
 
-**Menggunakan `pip` + `venv`:**
-
-```bash
-python -m venv .venv
-source .venv/bin/activate        # Windows: .venv\Scripts\activate
-pip install -r requirements.txt  # atau: pip install .
-uvicorn main:app --host 0.0.0.0 --port 8000
-```
-
-Backend akan berjalan di `http://localhost:8000`. WebSocket tersedia di `ws://localhost:8000/ws`.
-
-> **Catatan:** Backend membutuhkan pustaka sistem `libgl1` dan `libglib2.0-0` untuk OpenCV. Di Ubuntu/Debian jalankan `sudo apt-get install libgl1 libglib2.0-0`.
-
----
-
-### 3. Jalankan Frontend
-
-Buka terminal baru:
-
-```bash
-cd frontend
-npm install
-npm start
-```
-
-Aplikasi akan terbuka secara otomatis di `http://localhost:3000`.
-
----
-
-### 4. Penggunaan Aplikasi
-
-1. Buka `http://localhost:3000` di browser.
-2. Navigasi ke halaman **Belajar**.
-3. Klik **"Mulai Kamera"** dan izinkan akses kamera saat diminta browser.
-4. Pilih mode:
-   - **Deteksi Bebas** — peragakan huruf abjad, hasil prediksi muncul langsung.
-   - **Mode Ujian** — sistem menampilkan huruf tantangan; peragakan dengan benar untuk lanjut ke soal berikutnya.
-5. Klik **"Hentikan Kamera"** untuk mengakhiri sesi.
-
----
-
-## Variabel Lingkungan
+Backend berjalan di `http://localhost:8000`; WebSocket di `ws://localhost:8000/ws`.
 
 ### Frontend
 
-Buat file `.env` di folder `frontend/` jika ingin mengganti URL backend (misalnya saat deploy):
-
-```
-REACT_APP_WS_URL=wss://domain-backend-anda.com/ws
-```
-
-Jika variabel ini tidak diset, frontend akan terhubung ke `ws://localhost:8000/ws` secara default.
-
----
-
-## Deployment
-
-### Backend (Railway / Docker)
-
-Proyek sudah menyertakan `Dockerfile` dan `nixpacks.toml` untuk deployment di [Railway](https://railway.app).
-
-```bash
-# Build Docker image secara lokal
-cd backend
-docker build -t bvision-backend .
-docker run -p 8000:8000 bvision-backend
-```
-
-### Frontend (Vercel / Netlify / Static Hosting)
+Di terminal terpisah:
 
 ```bash
 cd frontend
+npm ci
+```
+
+Buat `frontend/.env`:
+
+```env
+REACT_APP_WS_URL=ws://localhost:8000/ws
+```
+
+Jalankan frontend:
+
+```bash
+npm start
+```
+
+Buka `http://localhost:3000`, masuk **Belajar**, izinkan akses kamera, lalu pilih **Mulai Kamera**.
+
+## Environment variables
+
+| Variable | Lokasi | Nilai |
+|---|---|---|
+| `REACT_APP_WS_URL` | `frontend/.env` atau Vercel | URL WebSocket lengkap, misalnya `ws://localhost:8000/ws` lokal atau `wss://<domain-railway>/ws` production |
+| `ALLOWED_ORIGINS` | Backend/Railway | Origin frontend yang diizinkan, misalnya `https://<domain-vercel>`; backend saat ini default `*` |
+
+`REACT_APP_WS_URL` tertanam saat frontend dibuild. Setelah mengubah variable di Vercel, lakukan redeploy frontend.
+
+## Training model (opsional)
+
+Training terpisah dari backend serving. Siapkan gambar berlabel di `data/raw/<huruf>/`, lalu jalankan dari root repository:
+
+```bash
+uv sync
+uv run python training/extract_landmarks.py
+uv run python training/train.py
+```
+
+Konfigurasi dataset, split, model, dan MLflow ada di `training/params.yaml`. MLflow diarahkan ke `http://localhost:5000`; jalankan tracking server terlebih dahulu jika ingin UI tracking:
+
+```bash
+uv run mlflow server --host 127.0.0.1 --port 5000
+```
+
+Output training meliputi `data/processed/landmarks.csv`, `metrics/`, artefak MLflow lokal, dan pasangan model/scaler di `backend/models/`.
+
+## Test dan build frontend
+
+```bash
+cd frontend
+npm ci
+CI=true npm test -- --watchAll=false
 npm run build
 ```
 
-Folder `build/` yang dihasilkan dapat di-deploy ke layanan hosting statis mana pun. Pastikan variabel `REACT_APP_WS_URL` diset ke URL backend produksi sebelum build.
+Workflow GitHub Actions di `.github/workflows/ci_cd.yml` menjalankan test/build frontend, pemeriksaan sintaks backend dan keberadaan model, serta build Docker image pada push/pull request ke `main`. Workflow ini **belum melakukan deploy**. Railway dapat deploy otomatis dengan menghubungkan service ke repository dan branch yang dipilih.
 
----
+## Deploy
+
+### Backend ke Railway
+
+1. Hubungkan repository GitHub ke Railway.
+2. Set root directory service ke `/backend`.
+3. Pilih build dari `backend/Dockerfile`.
+4. Buat domain publik dan pastikan target port mengikuti `$PORT` Railway.
+5. Set `ALLOWED_ORIGINS=https://<domain-vercel>`.
+6. Periksa deployment log; Uvicorn harus listen di `0.0.0.0:$PORT` dan model/scaler berhasil dimuat.
+
+Dockerfile menjalankan backend pada port `$PORT` (fallback `8000`). Jika memakai Nixpacks, `backend/nixpacks.toml` menyediakan install dan start command yang sesuai.
+
+### Frontend ke Vercel
+
+1. Impor repository ke Vercel.
+2. Set **Root Directory** ke `frontend`.
+3. Tambahkan environment variable:
+
+```text
+REACT_APP_WS_URL=wss://<domain-railway>/ws
+```
+
+4. Deploy/redeploy frontend setelah variable diset.
+
+## Catatan integrasi dan privasi
+
+- Browser production memerlukan `wss://` karena situs menggunakan HTTPS.
+- Kamera hanya diakses setelah izin pengguna. Frame JPEG dikirim ke backend setiap 400 ms selama sesi kamera aktif.
+- Jangan log atau menyimpan frame kamera tanpa kebutuhan dan persetujuan yang jelas.
+- CI memeriksa kode dan build; belum ada monitoring prediksi produksi atau retraining otomatis.
 
 ## Pengembang
 
-**Abrar Wahid**  
-Mahasiswa Informatika | AI/ML Engineer & Software Engineer  
-GitHub: [github.com/abrarwahidd](https://github.com/abrarwahidd)
+**Abrar Wahid** — [GitHub](https://github.com/abrarwahidd)

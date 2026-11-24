@@ -1,70 +1,84 @@
-# Getting Started with Create React App
+# Bvision Frontend
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+Frontend React untuk platform belajar abjad BISINDO. Menyediakan halaman belajar, kamus, artikel, informasi BISINDO, dan kontak. Fitur deteksi kamera mengirim frame JPEG ke backend melalui WebSocket.
 
-## Available Scripts
+## Teknologi
 
-In the project directory, you can run:
+- React 19 dan Create React App
+- React Router DOM 7
+- Browser APIs: `getUserMedia`, Canvas, WebSocket
 
-### `npm start`
+## Menjalankan lokal
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+Prasyarat: Node.js 18+ dan npm.
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+Dari folder `frontend/`:
 
-### `npm test`
+```bash
+npm ci
+```
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+Buat file `.env`:
 
-### `npm run build`
+```env
+REACT_APP_WS_URL=ws://localhost:8000/ws
+```
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+Jalankan development server:
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+```bash
+npm start
+```
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+Buka `http://localhost:3000`. Backend harus berjalan dan menyediakan endpoint `/ws` sebelum fitur kamera dapat digunakan.
 
-### `npm run eject`
+## Environment variable
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+| Variable | Fungsi | Contoh lokal | Contoh production |
+|---|---|---|---|
+| `REACT_APP_WS_URL` | Alamat WebSocket backend | `ws://localhost:8000/ws` | `wss://<domain-railway>/ws` |
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+Variable `REACT_APP_*` dimasukkan ke bundle saat build. Setelah mengubah nilainya di Vercel, redeploy frontend. Situs HTTPS harus menggunakan `wss://`.
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+## Alur kamera
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+1. Pengguna memberi izin kamera melalui browser.
+2. Frontend menggambar frame video ke Canvas.
+3. Setiap 400 ms, frame dikirim sebagai JPEG blob (kualitas 50%) ke `REACT_APP_WS_URL`.
+4. Frontend menerima teks prediksi dari backend dan menampilkan hasil atau memeriksa jawaban mode ujian.
 
-## Learn More
+Kamera hanya dapat digunakan pada secure context seperti HTTPS atau `localhost`, serta setelah izin diberikan.
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+## Perintah
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+```bash
+npm start
+```
+Menjalankan development server di `http://localhost:3000`.
 
-### Code Splitting
+```bash
+CI=true npm test -- --watchAll=false
+```
+Menjalankan test satu kali tanpa watch mode.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+```bash
+npm run build
+```
+Membangun bundle production di `build/`.
 
-### Analyzing the Bundle Size
+## Deploy ke Vercel
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+1. Impor repository GitHub ke Vercel.
+2. Set **Root Directory** ke `frontend`.
+3. Set environment variable production:
 
-### Making a Progressive Web App
+```text
+REACT_APP_WS_URL=wss://<domain-railway>/ws
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+4. Deploy atau redeploy setelah variable ditambahkan.
+5. Pastikan backend Railway aktif dan `ALLOWED_ORIGINS` backend berisi origin Vercel, misalnya `https://<domain-vercel>`.
 
-### Advanced Configuration
+## CI
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+Workflow GitHub Actions di `../.github/workflows/ci_cd.yml` menjalankan `npm ci`, test, dan production build pada push/pull request ke `main`. Workflow belum melakukan deployment ke Vercel; deployment dapat dikelola lewat integrasi GitHub Vercel.
