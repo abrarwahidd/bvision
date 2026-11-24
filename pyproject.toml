@@ -8,7 +8,6 @@ authors = [
 ]
 requires-python = ">=3.12"
 dependencies = [
-    "dvc>=3.67.1",
     "evidently>=0.7.23",
     "mediapipe==0.10.21",
     "mlflow>=3.18.0",

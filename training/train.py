@@ -49,7 +49,7 @@ with mlflow.start_run(run_name="rf-bisindo"):
     }
     mlflow.log_metrics(metrics)
 
-    # Simpan metrics untuk DVC (Fase 3)
+    # Simpan metrik evaluasi.
     (ROOT / "metrics").mkdir(exist_ok=True)
     with open(ROOT / "metrics/scores.json", "w") as f:
         json.dump(metrics, f, indent=2)
